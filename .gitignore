@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Environments
+.env
+.env.*
+venv/
+env/
+.venv/
+
+# Editor folders
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Mypy
+.mypy_cache/
+
+# Pytest
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+
+# Pydantic compiled models
+*.schema.json
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# FastAPI static/media folders (if dynamic or user-uploaded)
+media/
+static/
+
+# SQLite DB (optional, if used locally)
+*.sqlite3
+*.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# VS Code settings and workspace storage
+.vscode/
+*.code-workspace
