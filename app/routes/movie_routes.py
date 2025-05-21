@@ -82,6 +82,30 @@ router = APIRouter(
 
 
 
+@router.post("/", response_model=schemas.MovieOut)
+async def create_movie(
+    title: str = Form(...),
+    year: int = Form(...),
+    poster: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user_id: UUID = Depends(get_current_user),
+):
+    if year < 1888 or year > 2100:
+        raise HTTPException(status_code=400, detail="Invalid year value")
+
+    poster_path = save_poster_file(poster)
+
+    new_movie = models.Movie(
+        title=title, year=year, poster_url=poster_path, owner_id=user_id
+    )
+
+    db.add(new_movie)
+    await db.commit()
+    await db.refresh(new_movie)
+
+    return new_movie
+
+
 @router.post("/bulk-upload/")
 async def bulk_upload_movies(
     file: UploadFile = File(...),
@@ -119,7 +143,7 @@ async def bulk_upload_movies(
                 title=title.strip(),
                 year=year,
                 poster_url=poster_url.strip(),
-                owner_id=user_id
+                owner_id=user_id,
             )
 
             db.add(movie)
@@ -130,77 +154,11 @@ async def bulk_upload_movies(
     except Exception as e:
         print(f"Database commit failed: {e}")
         await db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to save movies to the database")
+        raise HTTPException(
+            status_code=500, detail="Failed to save movies to the database"
+        )
 
-    return {
-        "status": "success",
-        "created": created_count,
-        "skipped": skipped_rows
-    }
-
-
-async def create_movie(
-    title: Optional[str] = Form(None),
-    year: Optional[int] = Form(None),
-    poster: Optional[UploadFile] = File(None),
-    csv_file: Optional[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db),
-    user_id: UUID = Depends(get_current_user),
-):
-    movies = []
-
-    # ✅ Bulk upload via CSV
-    if csv_file:
-        content = await csv_file.read()
-        decoded = content.decode("utf-8")
-        reader = csv.DictReader(io.StringIO(decoded))
-
-        for row in reader:
-            try:
-                row_title = row["title"].strip()
-                row_year = int(row["year"])
-                row_poster = row["poster_path"].strip()
-
-                if row_year < 1888 or row_year > 2100:
-                    raise ValueError("Invalid year")
-
-                movie = models.Movie(
-                    title=row_title,
-                    year=row_year,
-                    poster_url=row_poster,
-                    owner_id=user_id
-                )
-                db.add(movie)
-                movies.append(movie)
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"CSV Error: {str(e)}")
-
-        await db.commit()
-        for movie in movies:
-            await db.refresh(movie)
-
-        return movies
-
-    # ✅ Single movie upload
-    if not title or not year or not poster:
-        raise HTTPException(status_code=400, detail="Missing title, year, or poster")
-
-    if year < 1888 or year > 2100:
-        raise HTTPException(status_code=400, detail="Invalid year value")
-
-    poster_path = save_poster_file(poster)
-
-    movie = models.Movie(
-        title=title,
-        year=year,
-        poster_url=poster_path,
-        owner_id=user_id
-    )
-    db.add(movie)
-    await db.commit()
-    await db.refresh(movie)
-
-    return [movie]
+    return {"status": "success", "created": created_count, "skipped": skipped_rows}
 
 
 @router.get("/", response_model=schemas.PaginatedMovieOut)
