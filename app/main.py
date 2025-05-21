@@ -28,20 +28,3 @@ os.makedirs(IMAGES_DIR, exist_ok=True)
 
 # Mount the static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-# from fastapi import FastAPI
-# from fastapi.staticfiles import StaticFiles
-# from app.database import Base, async_engine
-# from app.routes import auth_routes, movie_routes
-# import asyncio
-
-# app = FastAPI()
-
-# @app.on_event("startup")
-# async def on_startup():
-#     async with async_engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
-
-# app.include_router(auth_routes.router)
-# app.include_router(movie_routes.router)
-# app.mount("/static", StaticFiles(directory="static"), name="static")
