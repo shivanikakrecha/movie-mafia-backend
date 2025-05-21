@@ -81,6 +81,31 @@ router = APIRouter(
 )
 
 
+@router.post("/", response_model=schemas.MovieOut)
+# async def create_movie(
+#     title: str = Form(...),
+#     year: int = Form(...),
+#     poster: UploadFile = File(...),
+#     db: AsyncSession = Depends(get_db),
+#     user_id: UUID = Depends(get_current_user),
+# ):
+#     if year < 1888 or year > 2100:
+#         raise HTTPException(status_code=400, detail="Invalid year value")
+
+#     poster_path = save_poster_file(poster)
+
+#     new_movie = models.Movie(
+#         title=title,
+#         year=year,
+#         poster_url=poster_path,
+#         owner_id=user_id
+#     )
+
+#     db.add(new_movie)
+#     await db.commit()
+#     await db.refresh(new_movie)
+
+#     return new_movie
 
 @router.post("/bulk-upload/")
 async def bulk_upload_movies(
