@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 import io
 import math
 import shutil
@@ -115,8 +116,11 @@ async def create_movie(
     db: AsyncSession = Depends(get_db),
     user_id: UUID = Depends(get_current_user),
 ):
-    if year < 1888 or year > 2100:
-        raise HTTPException(status_code=400, detail="Invalid year value")
+    if len(title.strip()) < 1 or len(title.strip()) > 100:
+        raise HTTPException(status_code=400, detail="Title must be between 1 and 100 characters")
+
+    if year < 1888 or year > datetime.now().year:
+        raise HTTPException(status_code=400, detail="Year must be between 1888 and current year")
 
     poster_path = save_poster_file(poster)
 
@@ -162,6 +166,11 @@ async def bulk_upload_movies(
                 year = int(year)
             except ValueError:
                 skipped_rows.append({"row": index, "reason": "Year must be an integer"})
+                continue
+
+            if len(title.strip()) < 1 or len(title.strip()) > 100:
+                continue
+            if year < 1888 or year > datetime.now().year:
                 continue
 
             movie = models.Movie(
