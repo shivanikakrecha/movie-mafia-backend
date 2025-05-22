@@ -1,6 +1,6 @@
 import re
-from pydantic import BaseModel, EmailStr, Field, UUID4, HttpUrl, field_validator
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, UUID4, HttpUrl, field_validator, ConfigDict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
@@ -11,7 +11,6 @@ class UserBase(BaseModel):
     full_name: str = Field(..., example="John Doe")
     is_active: Optional[bool] = Field(default=True)
     is_admin: Optional[bool] = Field(default=False)
-
 
     @field_validator('full_name')
     def validate_full_name(cls, v):
@@ -51,9 +50,8 @@ class UserLogin(BaseModel):
             raise ValueError("Password must be at least 8 characters long and include a capital letter, lowercase letter, number, and special character")
         return v
 
-
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6, example="secret123")
+    password: str = Field(..., min_length=6, example="Secret@123")
 
     @field_validator('password')
     def validate_password_complexity(cls, v):
@@ -70,9 +68,29 @@ class UserOut(UserBase):
     created_at: datetime
     last_login: Optional[datetime]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
+class UserResponse(BaseModel):
+    """Response model for user operations"""
+    status: str = Field(..., example="success")
+    message: str = Field(..., example="Operation successful")
+    user: Optional[Dict[str, Any]] = Field(None, example={
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "email": "user@example.com",
+        "full_name": "John Doe",
+        "is_active": True,
+        "created_at": "2024-01-01T00:00:00Z"
+    })
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TokenResponse(BaseModel):
+    """Response model for token operations"""
+    access_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    token_type: str = Field(..., example="bearer")
+    expires_in: int = Field(..., example=1800)  # 30 minutes in seconds
+
+    model_config = ConfigDict(from_attributes=True)
 
 # ---------- Movie Schemas ----------
 
@@ -104,8 +122,7 @@ class MovieOut(MovieBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ---------- Pagination Schema ----------
@@ -114,4 +131,6 @@ class PaginatedMovieOut(BaseModel):
     count: int = Field(..., example=42)
     totalPages: int = Field(..., example=6)
     data: List[MovieOut]
+
+    model_config = ConfigDict(from_attributes=True)
 

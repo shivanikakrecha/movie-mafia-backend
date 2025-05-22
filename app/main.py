@@ -1,33 +1,81 @@
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-# from app.database import Base, engine
+from app.database import engine
+from app.models.base import Base
 from app.routes import auth_routes, movie_routes
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-
-# Base.metadata.create_all(bind=engine)
-
 from fastapi.middleware.cors import CORSMiddleware
-app = FastAPI()
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-app.include_router(auth_routes.router)
-app.include_router(movie_routes.router)
+from app.core.config import get_settings
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Set up the settings
+settings = get_settings()
+
+async def create_tables():
+    """Create database tables."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+def create_application() -> FastAPI:
+    """Create and configure the FastAPI application."""
+    
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        version=settings.VERSION,
+        docs_url="/docs",  # Root level docs
+        redoc_url="/redoc",  # Root level redoc
+        openapi_url="/openapi.json"  # Root level OpenAPI schema
+    )
+    
+    # Set up CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.BACKEND_CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+    
+    # Set up trusted host middleware
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["*"]  # Configure this properly in production
+    )
+    
+    # Include routers with proper prefixes
+    app.include_router(
+        auth_routes.router,
+        prefix=f"{settings.API_V1_PREFIX}/auth",
+        tags=["Authentication"]
+    )
+    app.include_router(
+        movie_routes.router,
+        prefix=f"{settings.API_V1_PREFIX}/movies",
+        tags=["Movies"]
+    )
+    
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint."""
+        return {"status": "healthy"}
+    
+    @app.on_event("startup")
+    async def startup_event():
+        """Run startup tasks."""
+        await create_tables()
+    
+    return app
+
+app = create_application()
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    # Get the first error message (you can customize this logic further)
+    # Get the first error message
     errors = exc.errors()
     if errors:
         message = errors[0].get("msg", "Invalid input")

@@ -20,10 +20,12 @@ from jose import jwt, JWTError
 
 from app.database import get_db
 from app import models, schemas
-from app.auth import SECRET_KEY, ALGORITHM
+from app.core.config import get_settings
+from app.auth import get_current_user as auth_get_current_user
 from fastapi.security import OAuth2PasswordBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+settings = get_settings()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
 
 # Constants
 MAX_FILE_SIZE = 2 * 1024 * 1024  # 2 MB
@@ -188,7 +190,11 @@ class DatabaseOperations:
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> UUID:
     """Validate JWT token and return user ID"""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY.get_secret_value(),
+            algorithms=[settings.ALGORITHM]
+        )
         user_id = UUID(payload.get("sub"))
         if not user_id:
             raise MovieException(status_code=401, detail="Invalid token payload")
@@ -206,7 +212,6 @@ def get_full_url(request: Request, path: str) -> str:
     return f"{base_url}/{path}"
 
 router = APIRouter(
-    prefix="/movies",
     tags=["Movies"],
     dependencies=[Depends(get_current_user)]
 )
@@ -376,7 +381,7 @@ async def get_movies(
             .limit(limit)
             .offset(skip)
         )
-        
+
         # Execute query and transform results
         result = await db.execute(stmt)
         movies = result.scalars().all()
@@ -428,7 +433,7 @@ async def update_movie(
             await MovieValidator.validate_title_and_year(new_title, new_year)
             movie.title = new_title.strip()
             movie.year = new_year
-        
+
         if poster:
             await FileHandler.validate_file_type(poster)
             old_poster_path = Path(movie.poster_url)
@@ -440,7 +445,7 @@ async def update_movie(
         movie.updated_at = datetime.utcnow()
         await DatabaseOperations.commit_with_rollback(db, "Failed to update movie")
         await db.refresh(movie)
-        
+
         return MovieValidator.transform_response(movie, request)
     except Exception as e:
         if isinstance(e, MovieException):
@@ -458,7 +463,7 @@ async def delete_movie(
     try:
         movie = await DatabaseOperations.get_movie_by_id_and_owner(movie_id, user_id, db)
         poster_path = Path(movie.poster_url)
-        
+
         await db.delete(movie)
         await DatabaseOperations.commit_with_rollback(db, "Failed to delete movie")
         
