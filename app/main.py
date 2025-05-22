@@ -31,6 +31,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     errors = exc.errors()
     if errors:
         message = errors[0].get("msg", "Invalid input")
+        if not message:
+            message = errors[0].get("message", "Invalid input")
     else:
         message = "Invalid input"
 
