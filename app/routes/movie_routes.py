@@ -137,7 +137,7 @@ class MovieValidator:
             "id": movie.id,
             "title": movie.title,
             "year": movie.year,
-            "poster_url": get_full_url(request, movie.poster_url),
+            "poster_url": movie.poster_url if movie.poster_url.startswith('http') else get_full_url(request, movie.poster_url),
             "owner_id": movie.owner_id,
             "created_at": movie.created_at or datetime.utcnow(),
             "updated_at": movie.updated_at or datetime.utcnow()
