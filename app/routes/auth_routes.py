@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -25,7 +26,7 @@ async def register(user: schemas.UserCreate, db: AsyncSession = Depends(get_db))
     hashed = auth.get_password_hash(user.password)
     
     # Create new user and save to the database
-    new_user = models.User(email=user.email, hashed_password=hashed)
+    new_user = models.User(email=user.email, hashed_password=hashed, created_at=datetime.utcnow())
     db.add(new_user)
     await db.commit()  # Commit the transaction asynchronously
     await db.refresh(new_user)  # Refresh to get the latest data after commit
