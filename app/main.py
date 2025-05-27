@@ -14,8 +14,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
-app.include_router(auth_routes.router)
-app.include_router(movie_routes.router)
+app.include_router(auth_routes.router, prefix='/api')
+app.include_router(movie_routes.router, prefix='/api')
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,3 +50,4 @@ os.makedirs(IMAGES_DIR, exist_ok=True)
 
 # Mount the static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/media", StaticFiles(directory="media"), name="media")

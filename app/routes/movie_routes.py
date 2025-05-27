@@ -30,6 +30,7 @@ MAX_FILE_SIZE = 2 * 1024 * 1024  # 2 MB
 CHUNK_SIZE = 1024 * 1024  # 1 MB
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 POSTER_DIR = Path("static/posters")
+MEDIA_DIR = Path("media/posters")
 MAX_TITLE_LENGTH = 100
 MIN_YEAR = 1888
 DEFAULT_PAGE_SIZE = 8
@@ -86,9 +87,13 @@ class FileHandler:
     ) -> Tuple[str, Path]:
         """Save file with size validation and cleanup on failure"""
         try:
-            POSTER_DIR.mkdir(parents=True, exist_ok=True)
+            # POSTER_DIR.mkdir(parents=True, exist_ok=True)
+            # safe_filename = FileHandler.generate_safe_filename(file.filename)
+            # file_path = POSTER_DIR / safe_filename
+
+            MEDIA_DIR.mkdir(parents=True, exist_ok=True)
             safe_filename = FileHandler.generate_safe_filename(file.filename)
-            file_path = POSTER_DIR / safe_filename
+            file_path = MEDIA_DIR / safe_filename
             
             total_size = 0
             with file_path.open("wb") as buffer:
